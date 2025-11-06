@@ -10,8 +10,14 @@ git clone <your-repo>
 cd <your-repo>
 ./scripts/setup.sh
 
-# Run ingestion
-./scripts/run_ingestion.sh
+# Run ingestion (with all aspects)
+./datahub/obsidian_datahub_cli.py --vault-path ~/path/to/vault
+
+# Or list vaults only
+./datahub/obsidian_datahub_cli.py --list-only
+
+# Dry run to validate
+./datahub/obsidian_datahub_cli.py --vault-path ~/path/to/vault --dry-run
 
 # Open DataHub UI
 ./scripts/open_datahub.sh
@@ -41,13 +47,19 @@ export DATAHUB_OWNER_URN=urn:li:corpuser:your_username  # Optional: override own
 ```
 .
 ├── datahub/
-│   └── obsidian_datahub_ingestion.py  # Main ingestion script
+│   ├── obsidian_datahub/           # Main package
+│   │   ├── __init__.py            # Package exports
+│   │   ├── discovery.py           # Vault/note discovery
+│   │   ├── aspects.py             # DataHub aspect creation
+│   │   └── cli.py                 # CLI interface
+│   ├── obsidian_datahub_cli.py    # CLI wrapper script
+│   └── README.md                  # Package documentation
 ├── scripts/
-│   ├── run_ingestion.sh      # Run ingestion script
-│   ├── check_entity.sh       # Check DataHub entity
-│   ├── open_datahub.sh       # Open UI and list vaults
-│   └── setup.sh             # Set up Python environment
-└── requirements.txt         # Python dependencies
+│   ├── run_datahub_docker_quickstart.sh  # Start DataHub
+│   ├── check_entity.sh                   # Check DataHub entity
+│   ├── open_datahub.sh                   # Open UI and list vaults
+│   └── setup.sh                          # Set up Python environment
+└── requirements.txt                      # Python dependencies
 ```
 
 ## DataHub Integration Details

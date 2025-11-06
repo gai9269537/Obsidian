@@ -1,51 +1,87 @@
-gai9269537: fix this code to avoid using applescript.  just use standard python packages
+# Obsidian DataHub Integration
 
-GitHub Copilot: I'll help you fix the code to avoid using AppleScript, but I need to see the current content of the test1.py file first. Let me read it. 
+A Python package for integrating Obsidian vaults with DataHub metadata catalog.
 
-Read [](file:///Users/khatran/Desktop/Repos/Obsidian/test1.py)
+## Installation
 
-I see that the code is using AppleScript to get information about the active Obsidian window. We can replace this with a more standard Python approach using the `psutil` and `rumps` packages, which are Python libraries that can help us interact with macOS processes and applications.
-
-Let me modify the code to use these standard Python packages instead. First, we'll need to install the required packages. 
-
-Configuring a Python Environment
-Completed with input: {
-  "resourcePath": "/Users/khatran/Desktop/Repos/Obsidian/test1.py"
-}
-
-Creating a Virtual Environment
-Completed with input: {
-  "resourcePath": "/Users/khatran/Desktop/Repos/Obsidian/test1.py"
-}
-
-Installing packages psutil, rumps in .venv (3.13.2)
-Completed with input: {
-  "packageList": [
-    "psutil",
-    "rumps"
-  ],
-  "resourcePath": "/Users/khatran/Desktop/Repos/Obsidian/test1.py"
-}
-
-Now I'll modify the code to use these standard Python packages instead of AppleScript. Here's the replacement: 
-
-Using "Replace String in File"
-
-
+```bash
+# In repository root
+python -m pip install -r requirements.txt
 ```
 
+## Usage
+
+The package provides a CLI tool for vault discovery and DataHub ingestion:
+
+```bash
+# List available vaults
+./obsidian_datahub_cli.py --list-only
+
+# Dry run to validate
+./obsidian_datahub_cli.py --dry-run
+
+# Full ingestion with debug logging
+./obsidian_datahub_cli.py --debug
+
+# Select specific aspects
+./obsidian_datahub_cli.py --aspects ownership,schema
+
+# Specify vault path
+./obsidian_datahub_cli.py --vault-path ~/Documents/MyVault
 ```
 
+## Package Structure
 
-Using "Replace String in File"
+The package is organized into several modules:
 
+- `obsidian_datahub/discovery.py`: Vault and note discovery
+- `obsidian_datahub/aspects.py`: DataHub aspect creation
+- `obsidian_datahub/cli.py`: Command-line interface
+- `obsidian_datahub_cli.py`: CLI wrapper script
 
+## Configuration
+
+Environment variables:
+- `DATAHUB_GMS`: DataHub GMS endpoint (default: http://localhost:8080)
+- `DATAHUB_UI`: DataHub UI endpoint (default: http://localhost:9002)
+- `DATAHUB_TOKEN`: Optional auth token for GMS
+- `DATAHUB_OWNER_URN`: Optional owner URN override
+- `OBSIDIAN_VAULT_PATH`: Optional specific vault path
+- `OBSIDIAN_DATAHUB_LOG_LEVEL`: Logging level (default: INFO)
+## Features
+
+- Multi-vault discovery and scanning
+- DataHub aspect generation:
+  - Dataset properties
+  - Ownership
+  - Schema metadata
+  - Browse paths
+  - Status
+- Selective aspect emission
+- Dry-run validation
+- Debug logging
+- Configurable paths and owners
+
+## Development
+
+See [DEVELOPMENT.md](../DEVELOPMENT.md) for detailed development guide.
+
+### Quick Development Setup
+
+```bash
+# Clone repo and install dependencies
+git clone <repo>
+cd <repo>
+python -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+
+# Run tests
+python -m pytest tests/
+
+# Development run with debug logging
+OBSIDIAN_DATAHUB_LOG_LEVEL=DEBUG ./obsidian_datahub_cli.py --dry-run
 ```
-
-```
-Let me fix that error: 
-
-Using "Replace String in File"
 
 
 ```

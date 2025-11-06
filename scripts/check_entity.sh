@@ -36,13 +36,30 @@ echo "DataHub GMS API URL:"
 echo "  $DATAHUB_GMS/v2/datasets/$ENC_URN"
 echo
 
-# Fetch entity from GMS API
+# Fetch entity from GMS API (with GraphQL fallback for domain lookups)
 echo "Fetching entity from GMS..."
 if [ -n "$3" ]; then
     # Fetch specific aspects
     for aspect in $(echo $3 | tr ',' ' '); do
         echo "Fetching aspect: $aspect"
-        curl -s -H "Accept: application/json" "$DATAHUB_GMS/v2/datasets/$ENC_URN/aspects/$aspect" | python3 -m json.tool
+        # Special-case domains: v2 aspect read often returns 404; use GraphQL for reliable domain lookup
+        if [ "$aspect" = "domains" ] || [ "$aspect" = "domain" ]; then
+            # call helper Python script to query GraphQL and pretty-print result
+            python3 "$(dirname "$0")/check_domain.py" "$URN" "$DATAHUB_GMS" || true
+        else
+            # Try v2 endpoint first; if it returns 404, fall back to GraphQL domain lookup when appropriate
+            HTTP_STATUS=$(curl -s -o /tmp/check_entity_out.json -w "%{http_code}" -H "Accept: application/json" "$DATAHUB_GMS/v2/datasets/$ENC_URN/aspects/$aspect")
+            if [ "$HTTP_STATUS" = "200" ]; then
+                cat /tmp/check_entity_out.json | python3 -m json.tool
+            else
+                echo "v2 GET returned status $HTTP_STATUS for aspect $aspect"
+                if [ "$aspect" = "domains" ] || [ "$aspect" = "domain" ]; then
+                    python3 "$(dirname "$0")/check_domain.py" "$URN" "$DATAHUB_GMS" || true
+                else
+                    cat /tmp/check_entity_out.json || true
+                fi
+            fi
+        fi
         echo
     done
 else

@@ -71,6 +71,31 @@ OBSIDIAN_DATAHUB_LOG_LEVEL=INFO
 --debug             Enable debug logging
 ```
 
+## Quick domain check
+
+After running ingestion you can verify a dataset was assigned to your configured domain.
+
+Using the helper script (recommended):
+
+```bash
+# show domain details (human-readable)
+./scripts/check_domain.py "urn:li:dataset:(urn:li:dataPlatform:obsidian,obsidian.Kha.Python,PROD)"
+
+# machine-friendly JSON output (good for CI)
+./scripts/check_domain.py "urn:li:dataset:(urn:li:dataPlatform:obsidian,obsidian.Kha.Python,PROD)" http://localhost:8080 --json
+```
+
+Or use the combined smoke-test (dry-run) which queries GraphQL for the domain:
+
+```bash
+./scripts/smoke_test_ingest_and_check.sh
+
+# To run ingestion then verify, add --run
+./scripts/smoke_test_ingest_and_check.sh --run
+```
+
+The `check_entity.sh` script now falls back to this GraphQL helper when checking `domains`.
+
 ## DataHub Integration
 
 ### Metadata Organization

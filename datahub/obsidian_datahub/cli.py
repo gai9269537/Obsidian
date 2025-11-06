@@ -16,7 +16,7 @@ from .discovery import (
     format_vault_info,
     format_note_info,
 )
-from .aspects import create_datahub_emitter, emit_note_metadata
+from .aspects import create_datahub_emitter, emit_note_metadata, ensure_domain_exists
 
 logger = logging.getLogger("obsidian-datahub")
 
@@ -108,13 +108,18 @@ def main() -> None:
     parser.add_argument(
         "--aspects",
         nargs="+",
-        choices=["properties", "status", "ownership", "schema", "browse"],
+        choices=["properties", "status", "ownership", "schema", "browse", "domain"],
         help="Only emit specific aspects",
     )
     parser.add_argument(
         "--debug",
         action="store_true",
         help="Enable debug logging",
+    )
+    parser.add_argument(
+        "--create-domain",
+        action="store_true",
+        help="Create the domain specified in DATAHUB_DOMAIN_URN if it doesn't exist",
     )
     args = parser.parse_args()
 
@@ -127,6 +132,15 @@ def main() -> None:
 
     if args.list_only:
         print_vaults(vaults)
+        return
+
+    # create domain if requested
+    if args.create_domain:
+        emitter = create_datahub_emitter()
+        try:
+            ensure_domain_exists(emitter)
+        finally:
+            emitter.close()
         return
 
     # ingest metadata

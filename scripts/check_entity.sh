@@ -33,12 +33,22 @@ echo "DataHub UI URL:"
 echo "  $DATAHUB_UI/entity?urn=$ENC_URN"
 echo
 echo "DataHub GMS API URL:"
-echo "  $DATAHUB_GMS/entities?urn=$ENC_URN$ASPECTS"
+echo "  $DATAHUB_GMS/v2/datasets/$ENC_URN"
 echo
 
 # Fetch entity from GMS API
 echo "Fetching entity from GMS..."
-curl -s -H "Accept: application/json" "$DATAHUB_GMS/entities?urn=$ENC_URN$ASPECTS" | python3 -m json.tool
+if [ -n "$3" ]; then
+    # Fetch specific aspects
+    for aspect in $(echo $3 | tr ',' ' '); do
+        echo "Fetching aspect: $aspect"
+        curl -s -H "Accept: application/json" "$DATAHUB_GMS/v2/datasets/$ENC_URN/aspects/$aspect" | python3 -m json.tool
+        echo
+    done
+else
+    # Fetch full entity
+    curl -s -H "Accept: application/json" "$DATAHUB_GMS/v2/datasets/$ENC_URN" | python3 -m json.tool
+fi
 
 # Check response
 if [ $? -eq 0 ]; then

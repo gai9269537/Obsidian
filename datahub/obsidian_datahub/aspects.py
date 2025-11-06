@@ -33,6 +33,7 @@ from datahub.metadata.schema_classes import (
     MapTypeClass,
     NullTypeClass,
     TimeTypeClass,
+    DomainPropertiesClass,
 )
 
 from .discovery import ObsidianNote, ObsidianVault
@@ -45,6 +46,79 @@ def create_datahub_emitter() -> DatahubRestEmitter:
     gms = os.getenv("DATAHUB_GMS", "http://localhost:8080")
     logger.info("Using DataHub GMS at %s", gms)
     return DatahubRestEmitter(gms_server=gms, token=os.getenv("DATAHUB_TOKEN", ""))
+
+
+def ensure_domain_exists(emitter: DatahubRestEmitter) -> None:
+    """Create the domain in DataHub if it doesn't exist."""
+    from datahub.metadata.schema_classes import (
+        DomainPropertiesClass,
+        DomainKeyClass,
+    )
+
+    domain_urn = get_domain_urn()
+    if not domain_urn:
+        return
+
+    domain_name = domain_urn.split(":")[-1]  # Get name from urn:li:domain:name
+    logger.info("Ensuring domain exists: %s", domain_name)
+
+    # Create the domain key aspect (required)
+    key_aspect = DomainKeyClass(id=domain_name)
+    key_mcp = MetadataChangeProposalWrapper(
+        entityType="domain",
+        entityUrn=domain_urn,
+        aspectName="domainKey",
+        aspect=key_aspect,
+    )
+
+    # Create domain properties using the correct class
+    domain_props = DomainPropertiesClass(
+        name=domain_name,
+        description=f"Domain for Obsidian notes and vaults"
+    )
+    props_mcp = MetadataChangeProposalWrapper(
+        entityType="domain",
+        entityUrn=domain_urn,
+        aspectName="domainProperties",
+        aspect=domain_props,
+    )
+
+    # Emit both MCPs (key then properties)
+    try:
+        emitter.emit(key_mcp)
+        emitter.emit(props_mcp)
+        logger.info("Domain created/updated successfully: %s", domain_name)
+    except Exception as e:
+        logger.warning("Failed to create domain %s: %s", domain_name, e)
+
+
+def get_domain_urn() -> Optional[str]:
+    """Get the DataHub domain URN from environment variable."""
+    domain_urn = os.getenv("DATAHUB_DOMAIN_URN")
+    if domain_urn and not domain_urn.startswith("urn:li:domain:"):
+        # If only domain name is provided, construct the full URN
+        domain_urn = f"urn:li:domain:{domain_urn}"
+    return domain_urn
+
+
+def create_domain_mcp(dataset_urn: str) -> Optional[MetadataChangeProposalWrapper]:
+    """Create a domain aspect for a dataset if DATAHUB_DOMAIN_URN is set."""
+    from datahub.metadata.schema_classes import DomainsClass
+    
+    domain_urn = get_domain_urn()
+    if not domain_urn:
+        return None
+
+    domains_aspect = DomainsClass(
+        domains=[domain_urn]
+    )
+
+    return MetadataChangeProposalWrapper(
+        entityType="dataset",
+        entityUrn=dataset_urn,
+        aspectName="domains",
+        aspect=domains_aspect,
+    )
 
 
 def create_dataset_urn(vault: ObsidianVault, note: ObsidianNote) -> str:
@@ -232,7 +306,11 @@ def emit_note_metadata(
 ) -> None:
     """Emit metadata for a single note."""
     if aspects is None:
-        aspects = ["properties", "status", "ownership", "schema", "browse"]
+        aspects = ["properties", "status", "ownership", "schema", "browse", "domain"]
+        
+    # Ensure domain exists if we're going to use it
+    if "domain" in aspects and get_domain_urn():
+        ensure_domain_exists(emitter)
 
     # build identifiers
     safe_vault = vault.name.replace(" ", "_")
@@ -279,5 +357,15 @@ def emit_note_metadata(
         except Exception:
             # non-fatal
             logger.debug("browsePaths emission failed for %s", dataset_urn, exc_info=True)
+
+    # emit domains (assign dataset to a DataHub domain) if configured
+    if "domain" in aspects:
+        try:
+            mcp_domain = create_domain_mcp(dataset_urn)
+            if mcp_domain:
+                logger.info("Emitting domains for %s", dataset_urn)
+                emitter.emit(mcp_domain)
+        except Exception as e:
+            logger.warning("Emitting domains failed for %s: %s -- continuing without domains", dataset_urn, e)
 
     logger.info("Emit OK: %s", dataset_urn)

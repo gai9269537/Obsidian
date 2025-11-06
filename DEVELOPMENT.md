@@ -39,7 +39,12 @@ export DATAHUB_UI=http://localhost:9002   # DataHub UI endpoint
 # Obsidian configuration
 export OBSIDIAN_VAULT_PATH=~/path/to/vault  # Optional: specific vault to scan
 export DATAHUB_TOKEN=your_token             # Optional: auth token for GMS
+
+# DataHub entity configuration
 export DATAHUB_OWNER_URN=urn:li:corpuser:your_username  # Optional: override owner URN
+export DATAHUB_DOMAIN_URN=your_domain  # Optional: domain for organizing datasets
+                                      # Can be just domain name or full URN (urn:li:domain:your_domain)
+                                      # Domain will be created automatically if it doesn't exist
 ```
 
 ## Project Structure
